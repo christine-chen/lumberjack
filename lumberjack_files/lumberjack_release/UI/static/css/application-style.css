@@ -1,0 +1,90 @@
+.summarySubheading {
+    font-weight: normal;
+}
+.totalTime {
+    letter-spacing: -0.01em;
+}
+.r3d3_disclaimer {
+    margin-left: 20px;
+    margin-top: 0;
+    margin-bottom: 5px;
+}
+.questionLink {
+    color: black;
+}
+#questionMark {
+    margin-bottom: 5px;
+    color: black;
+}
+.tr.borderBottom td {
+    border-bottom:1pt solid black;
+}
+.failureLink {
+    color: black;
+}
+.successLink {
+    color: black;
+}
+.summaryHeading {
+    margin-top: 0;
+    margin-bottom: 5px;
+}
+#failuresHeading3 {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+#errorHeading3 {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+#failuresTable {
+    width: 90%;
+    margin-top: 10px;
+    margin-bottom: 0;
+}
+.ingestion {
+    margin-top: 0;
+}
+#successTable {
+    margin-top: 10px;
+    margin-bottom: 0;
+    width: 90%;
+}
+.bs-callout {
+    padding: 20px;
+    margin: 20px 0;
+    border: 1px solid #eee;
+    border-left-width: 5px;
+    border-radius: 3px;
+}
+.bs-callout h4 {
+    margin-top: 0;
+    margin-bottom: 5px;
+}
+.bs-callout p:last-child {
+    margin-bottom: 0;
+}
+.bs-callout code {
+    border-radius: 3px;
+}
+.bs-callout+.bs-callout {
+    margin-top: -5px;
+}
+.bs-callout-default {
+    border-left-color: #777;
+}
+.bs-callout-primary {
+    border-left-color: #428bca;
+}
+.bs-callout-success {
+    border-left-color: #5cb85c;
+}
+.bs-callout-danger {
+    border-left-color: #d9534f;
+}
+.bs-callout-warning {
+    border-left-color: #f0ad4e;
+}
+.bs-callout-info {
+    border-left-color: #5bc0de;
+}

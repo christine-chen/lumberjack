@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+
+    <title>Application Dashboard</title>
+
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+
+    <link rel="stylesheet" href="../static/css/application-style.css">
+
+</head>
+
+<body>
+    <!-- NAVBAR -->
+    <nav class="navbar navbar-default">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1"
+                    aria-expanded="false">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="#">Kobayashi</a>
+            </div>
+
+            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                <ul class="nav navbar-nav">
+                    <li><a href="#">Dashboard</a></li>
+                    <li><a href="#">Workflows</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+
+    <div class="container">
+        <div class="row">
+            <div class="col-xs-12">
+                <h2>Ingestion Summary</h2>
+                <div class="bs-callout bs-callout-primary">
+                    <h3 class="summaryHeading">Date: <span class="summarySubheading">{{ app.start_date.strftime('%m/%d/%Y %H:%M:%S')}}</span> </h3>
+                    <h3 class="summaryHeading">App Name: <span class="summarySubheading">{{ app.name }}</span></h3>
+                    <h3 class="summaryHeading">App ID: <span class="summarySubheading">{{ app.id }}</span></h3>
+                    <h3 class="summaryHeading">Total Time:
+                        <span class="summarySubheading totalTime">
+                            {% if (app.total_ingestion_time // 3600) < 10 %}
+                                0{{ app.total_ingestion_time // 3600 }} :
+                            {% else %}
+                                {{ app.total_ingestion_time // 3600 }} :
+                            {% endif %}
+                            {% if ((app.total_ingestion_time % 3600) // 60) < 10 %}
+                                0{{ (app.total_ingestion_time % 3600) // 60 }} :
+                            {% else %}
+                                {{ (app.total_ingestion_time % 3600) // 60 }} :
+                            {% endif %}
+                            {% if (app.total_ingestion_time % 60) < 10 %}
+                                0{{ app.total_ingestion_time % 60 }}
+                            {% else %}
+                                {{ app.total_ingestion_time % 60 }}
+                            {% endif %}
+                        </span>
+                    </h3>
+                    <h3 class="summaryHeading">Log Name: <span class="summarySubheading">{{ app.log_file_name }}</span></h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="container">
+        <div class="row">
+            <div class="col-xs-12">
+                <h2>Failed Workflows</h2>
+                <div class="bs-callout bs-callout-danger">
+                    {% if app.failed_workflows_list == [] or app.failed_workflows_list == [''] %}
+                        <h3 id="failuresHeading3">No failed workflows occurred.</h3>
+                    {% else %}
+                        {% for f in app.failed_workflows_list %}
+                            {% for key in app.workflow_dict.keys() %}
+                                <!-- if current app set directly from main then f, else f.name comparison -->
+                                {% if f != "Null Workflow" and f.name == key %}
+                                    <a class="failureLink" href="/{{app.name}}/{{key}}">
+                                        <h4> {{key}} </h4>
+                                    </a>
+                                {% endif %}
+                            {% endfor %}
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row">
+            <div class="col-xs-12">
+                <h2>Error Details</h2>
+                <div class="bs-callout bs-callout-warning">
+                    {% if app.errors_list == [] and app.are_errors_in_workflows == False %}
+                        <h3 id="errorHeading3">No workflow errors occurred.</h3>
+                    {% elif app.errors_list != [] %}
+                        {% for error in app.errors_list %}
+                            <h3>Ingestion Error</h3>
+                            <h4>{{ error.traceback }}</h4>
+                        {% endfor %}
+                    {% else %}
+                        <div class="container">
+                            <table class="table table-hover col-xs-12" id="failuresTable">
+                                <tr class="active">
+                                    <th>Workflow Name</th>
+                                    <th>Operation</th>
+                                    <th>Error Summary</th>
+                                </tr>
+                                {% for key in app.workflow_dict.keys() %}
+                                    {% if key != "Null Workflow" %}
+                                        {% for e in app.workflow_dict.get(key).errors_list %}
+                                            <tr data-toggle="collapse" data-target="#{{e.line_number}}" class="clickable">
+                                                <td><a class="failureLink" href="/{{app.name}}/{{app.workflow_dict.get(key).name}}">{{ app.workflow_dict.get(key).name }}</a></td>
+
+                                                {% if e.operation_link_id == None or e.operation_type == "Validate" %}
+                                                    <td>Validate</td>
+                                                {% else %}
+                                                    {% for o in app.workflow_dict.get(key).operations_list %}
+                                                        {% if o.error_link_id == e.operation_link_id %}
+                                                            <td>{{o.operation_type}}</td>
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                {% endif %}
+
+                                                {% if e.heading == "" %} <td>
+                                                    <p>Unexpected Ingestion Error</p></td>
+                                                {% else %}
+                                                    <td> {{ e.heading }}</td>
+                                                {% endif %}
+                                            </tr>
+                                            <tr id="{{e.line_number}}" class="collapse">
+                                                <td colspan="3">
+                                                    <h5>Log Name: {{ app.log_file_path }}</h5>
+                                                    <h5>Error Line: {{ e.line_number }}</h5>
+                                                    <pre>{{ e.traceback }}</pre>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    {% endif %}
+                                {% endfor %}
+                                <tr class="borderBottom">
+                                    <td colspan="3"></td>
+                                </tr>
+                            </table>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="container">
+        <div class="row">
+            <div class="col-xs-12">
+                <h2>Success Details</h2>
+                <div class="bs-callout bs-callout-success">
+                    <div class="container">
+                        <table class="table table-hover col-xs-12" id="successTable">
+                            <tr class="active">
+                                <th>Workflow Name</th>
+                                <th>Bytes Transferred</th>
+                                <th>Rows Ingested</th>
+                                <th>Total Duration</th>
+                            </tr>
+                            {% for success in app.successful_workflows_list %}
+                                {% if success.name != "Null Workflow" %}
+                                    <tr>
+                                        <td><a class="successLink" href="/{{app.name}}/{{success.name}}">{{ success.name }}</a></td>
+                                        <td>{{success.bytes_transferred}}</td>
+                                        <td>{{success.rows_pulled}}</td>
+                                        <td>
+                                            <span class="nospace">
+                                            {% if (success.total_duration // 3600) < 10 %}
+                                                0{{ success.total_duration // 3600 }} :
+                                            {% else %}
+                                                {{ success.total_duration // 3600 }} :
+                                            {% endif %}
+
+                                            {% if ((success.total_duration % 3600) // 60) < 10 %}
+                                                0{{ (success.total_duration % 3600) // 60 }} :
+                                            {% else %}
+                                                {{ (success.total_duration % 3600) // 60 }} :
+                                            {% endif %}
+
+                                            {% if (success.total_duration % 60) < 10 %}
+                                                0{{ success.total_duration % 60 }}
+                                            {% else %}
+                                                {{ success.total_duration % 60 }}
+                                            {% endif %}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            {% endfor %}
+                            <tr class="borderBottom">
+                                <td colspan="4"></td>
+                            </tr>
+                        </table>
+                    </div>
+                    <h6 class="r3d3_disclaimer">*if all bytes transferred rows are 0, this is an r3d3 application</h6>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+</body>
+
+</html>

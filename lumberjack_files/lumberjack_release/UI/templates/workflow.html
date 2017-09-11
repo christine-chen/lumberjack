@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+
+		<title>Kobayashi Dashboard</title>
+
+		<!-- Latest compiled and minified CSS -->
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+
+		<link rel="stylesheet" href="../static/css/workflow-style.css">
+
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+		<script src="https://code.highcharts.com/highcharts.js"></script>
+		<script src="https://code.highcharts.com/modules/exporting.js"></script>
+
+	</head>
+	<body>
+
+	<!-- NAVBAR -->
+	<nav class="navbar navbar-default">
+	 	<div class="container-fluid">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="#">Kobayashi</a>
+            </div>
+
+            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                <ul class="nav navbar-nav">
+                    <li><a href="#">Dashboard</a></li>
+                    <li><a href="#">Workflows</a></li>
+                </ul>
+            </div>
+		</div>
+	</nav>
+
+
+	<div class="container">
+		<div class="row">
+			<div class="col-xs-12">
+				<h2 class="header">Workflow Summary</h2>
+				<div class="bs-callout bs-callout-primary">
+					<h3 class="header">Ingestion Date: <span class="workflowSummary">{{ workflow.date }}</span></h3>
+					<h3 class="header">App Name: <span class="workflowSummary">{{ app_name }}</span></h3>
+					<h3 class="header">Workflow: <span class="workflowSummary">{{ workflow.name }}</span></h3>
+					<h3 class="header">Log Name: <span class="workflowSummary">{{ workflow.log_file_name }}</span></h3>
+					{% if workflow.has_succeeded %}
+						<h3 class="header">Status: <span class="text-success workflowSummary">Success</span></h3>
+					{% else %}
+						<h3 class="header">Status: <span class="text-danger workflowSummary">Failed</span></h3>
+					{% endif %}
+				</div>
+			</div>
+		</div>
+	</div>
+
+
+	<div class="center-block" style="width:69%; height:100%;">
+		<div class="row">
+			<div class="col-xs-12">
+				<div id="myCarousel" class="carousel slide" data-ride="carousel" data-interval="false">
+					<div class="carousel-inner">
+						<div class="item active">
+							<div>
+								<div id="barGraph" style="width:100%; height:100%;">
+                                </div>
+                                <h6 class="validationDisclaimer">*if validation is 0, validation has skipped or errored</h6>
+							</div>
+						</div>
+						<div class="item">
+							<div>
+								<div id="lineGraph" style="width:100%; height:100%;">
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- Carousel controls -->
+					<a id="leftArrowCarousel" class="carousel-control left" href="#myCarousel" data-slide="prev">
+					<span class="controls glyphicon glyphicon-chevron-left"></span>
+					</a>
+					<a id="rightArrowCarousel" class="carousel-control right" href="#myCarousel" data-slide="next">
+					<span class="controls glyphicon glyphicon-chevron-right"></span>
+					</a>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		var importing = Math.ceil({{ workflow.import_duration }}*100)/100;
+		var transform = Math.ceil({{ workflow.transform_duration }}*100)/100;
+		var validate = Math.ceil({{ workflow.validation_duration }}*100/100);
+		var merge = Math.ceil({{ workflow.merge_duration }}*100)/100;
+
+		var operations = ["Import", "Transform", "Validate", "Merge"];
+		var operation_durations = [importing, transform, validate, merge];
+		var error_data = [0, 0, 0, 0];
+		var op_type = [];
+
+
+		{% for operation in workflow.operations_list %}
+
+			{% for error in workflow.errors_list %}
+
+				{%if error.operation_type == "Validate" %}
+					op_type.push("Validate");
+				{% elif operation.error_link_id  == error.operation_link_id %}
+		        	op_type.push("{{operation.operation_type}}");
+				{% endif %}
+
+			{% endfor %}
+
+		{% endfor %}
+
+		console.log(op_type);
+		for (var j=0; j < operations.length; j++) {
+			for (var k=0; k < op_type.length; k++) {
+			    console.log("************")
+				console.log(operations[j]);
+				console.log(op_type[k]);
+                if (operations[j] === op_type[k]) {
+                    console.log("=========");
+                    console.log(operation_durations[j]);
+                    error_data[j] = operation_durations[j];
+                }
+            }
+		}
+		console.log(error_data);
+
+		$(function () {
+			Highcharts.chart('barGraph', {
+				chart: {
+					type: 'column'
+				},
+				credits: {
+					enabled: false
+				},
+				title: {
+					text: 'Operation Durations'
+				},
+				xAxis: {
+					categories: ['Import', 'Transform', 'Validate', 'Merge']
+				},
+				yAxis: [{
+					min: 0,
+					title: {
+						text: 'Seconds'
+					}
+				}],
+				legend: {
+					shadow: false
+				},
+				tooltip: {
+					shared: true
+				},
+				plotOptions: {
+					column: {
+						grouping: false,
+						shadow: false,
+						borderWidth: 0
+					}
+				},
+				series: [{
+					name: 'Last Run',
+					color: 'rgba(165,170,217,1)',
+					data: [importing, transform, validate, merge],
+					pointPadding: 0.3,
+					pointPlacement: 0
+				}, {
+					name: 'Error In Operation',
+					color: 'rgba(219, 101, 102, 1)',
+					data: error_data,
+					pointPadding: 0.3,
+					pointPlacement: 0
+				}, {
+					name: 'Average',
+					color: 'rgba(126,86,134,.9)',
+					data: {{ average }},
+					pointPadding: 0.4,
+					pointPlacement: 0
+				}]
+			})
+		});
+
+
+		var date = "{{ workflow.date }}".split(" ")[0];
+		var myDate = new Date(date);
+        {#offset current date by a week#}
+		myDate = myDate - (6 * 24 * 60 * 60 * 1000);
+
+		var import_data = {{ history.get("importing") }};
+		var transform_data = {{ history.get("transforming") }};
+		var validate_data = {{ history.get("validating") }};
+		var merge_data = {{ history.get("merging") }};
+
+		$(function () {
+            Highcharts.chart('lineGraph', {
+				credits: {
+					enabled: false
+				},
+                title: {
+                    text: 'Operation Trends'
+                },
+
+                yAxis: {
+                    title: {
+                        text: 'Seconds'
+                    }
+                },
+
+                xAxis: {
+                    type: 'datetime'
+                },
+
+                legend: {
+                    layout: 'vertical',
+                    align: 'right',
+                    verticalAlign: 'middle'
+                },
+
+                plotOptions: {
+                    series: {
+                        pointStart: myDate,
+                        pointInterval: 24 * 3600 * 1000
+                    }
+                },
+
+                series: [{
+                    name: 'Import',
+					color: 'rgba(226, 78, 66, 1)',
+                    data: import_data
+                }, {
+                    name: 'Transform',
+					color: 'rgba(233, 176, 0, 1)',
+                    data: transform_data
+                }, {
+                    name: 'Validation',
+					color: 'rgba(235, 110, 128, 1)',
+                    data: validate_data
+                }, {
+                    name: 'Merge',
+					color: 'rgba(0, 143, 149, 1)',
+                    data: merge_data
+                }]
+            })
+        });
+	</script>
+
+
+	<div class="container">
+		<div class="row">
+			<div class="col-xs-12">
+				<h2>Errors</h2>
+				<div class="bs-callout bs-callout-danger">
+					{% if workflow.errors_list|length == 0 %}
+						<h4>No errors occurred in this workflow.</h4>
+					{% else %}
+						{% for e in workflow.errors_list %}
+							{% if e.operation_type == "Validate" %}
+								<h5 class="text-danger">Validate</h5>
+							{% else %}
+								{% for o in workflow.operations_list %}
+									{% if o.error_link_id == e.operation_link_id %}
+										<h5 class="text-danger">{{o.operation_type}}</h5>
+									{% endif %}
+								{% endfor %}
+							{% endif %}
+							<h5>{{ e.date }}</h5>
+							<h5>Log Path: {{ workflow.log_file_path }}</h5>
+							<h5>Error Line: {{ e.line_number }}</h5>
+							<h5>{{ e.heading }}</h5>
+							<pre>{{ e.traceback }}</pre>
+                        {% endfor %}
+					{% endif %}
+				</div>
+			</div>
+		</div>
+	</div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+	</body>
+</html>
